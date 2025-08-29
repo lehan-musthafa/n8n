@@ -1,10 +1,5 @@
 version: '3.8'
 
-volumes:
-  db_storage:
-  n8n_storage:
-  redis_storage:
-
 x-shared: &shared
   restart: always
   image: docker.n8n.io/n8nio/n8n
@@ -19,11 +14,8 @@ x-shared: &shared
     - QUEUE_BULL_REDIS_HOST=redis
     - QUEUE_HEALTH_CHECK_ACTIVE=true
     - N8N_ENCRYPTION_KEY=${ENCRYPTION_KEY}
-  links:
-    - postgres
-    - redis
   volumes:
-    - n8n_storage:/home/node/.n8n
+    - ../files/n8n-data:/home/node/.n8n
   depends_on:
     redis:
       condition: service_healthy
@@ -35,13 +27,13 @@ services:
     image: postgres:16
     restart: always
     environment:
-      - POSTGRES_USER
-      - POSTGRES_PASSWORD
-      - POSTGRES_DB
-      - POSTGRES_NON_ROOT_USER
-      - POSTGRES_NON_ROOT_PASSWORD
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_NON_ROOT_USER=${POSTGRES_NON_ROOT_USER}
+      - POSTGRES_NON_ROOT_PASSWORD=${POSTGRES_NON_ROOT_PASSWORD}
     volumes:
-      - db_storage:/var/lib/postgresql/data
+      - ../files/n8n-db:/var/lib/postgresql/data
       - ./init-data.sh:/docker-entrypoint-initdb.d/init-data.sh
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
@@ -53,7 +45,7 @@ services:
     image: redis:6-alpine
     restart: always
     volumes:
-      - redis_storage:/data
+      - ../files/n8n-redis:/data
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
